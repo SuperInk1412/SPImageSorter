@@ -1,0 +1,2820 @@
+<!DOCTYPE html>
+<html lang="zh-CN" style="--tag-columns: 2; --primary-color: hsl(350, 100%, 75%); --primary-dark: hsl(350, 100%, 65%); --primary-light: hsl(350, 100%, 90%); --bg-color: hsl(350, 100%, 97%); --panel-bg: hsl(350, 100%, 95%); --border-color: hsl(350, 100%, 85%); --panel-width: 350px;">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>看图</title>
+    <style>
+        :root {
+            --primary-color: #ffaeba;
+            --primary-dark: #ff91a4;
+            --primary-light: #ffdde1;
+            --bg-color: #fff5f7;
+            --panel-bg: #ffeef2;
+            --text-color: #333333;
+            --border-color: #ffccd5;
+            --panel-width: 350px;
+            --tag-columns: 2;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: auto !important;
+        }
+        .main-container {
+            display: flex;
+            height: 100%;
+        }
+        .preview-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .control-section {
+            width: var(--panel-width);
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            height: 100%;
+           /* overflow-y: auto; */
+            box-sizing: border-box;
+            transition: width 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .control-content {
+        flex: 1;
+        overflow-y: auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .settings-menu {
+            position: relative;
+        }
+        .settings-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .settings-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        .settings-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            width: 290px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+        .settings-dropdown.show {
+            display: block;
+        }
+        .panel-section {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        .panel-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .search-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .tag-selector {
+            width: 100%;
+            min-height: 120px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 5px;
+            margin-bottom: 10px;
+            
+            /* 响应式网格 */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 5px;
+            
+            overflow-y: auto;
+            max-height: 300px;
+            background-color: white;
+        }
+        .tag-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 3px;
+            background-color: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        .tag-item:hover {
+            background-color: var(--primary-light);
+        }
+        .tag-item input[type="checkbox"] {
+            margin-right: 6px;
+            accent-color: var(--primary-color);
+        }
+        .tag-item label {
+            cursor: pointer;
+            font-size: 13px;
+            flex-grow: 1;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .slider-container input[type="range"] {
+            flex-grow: 1;
+            margin: 0 10px;
+            accent-color: var(--primary-color);
+        }
+        .stats {
+            font-size: 14px;
+            color: var(--text-color);
+            margin-top: 10px;
+        }
+        .logic-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .logic-btn {
+            background-color: var(--primary-color);
+            font-size: 12px;
+            padding: 4px 8px;
+        }
+        .logic-btn.active {
+            background-color: var(--primary-dark);
+        }
+        /* 新增：已选标签按钮激活状态 */
+        .logic-btn.selected-view {
+            background-color: var(--primary-dark);
+            border: 2px solid var(--primary-color);
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1px;
+            background-color: var(--border-color);
+            padding: 1px;
+            transition: grid-template-columns 0.3s ease;
+        }
+        .image-card {
+            background-color: white;
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+            contain: strict; 
+            will-change: transform; /* 提示浏览器优化变换 */
+        }
+        .image-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            position: relative;
+        }
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.2s;
+        }
+        .image-container:hover img {
+            transform: scale(1.05);
+        }
+        .image-tags {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            padding: 8px 6px 4px;
+            font-size: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            justify-content: flex-end;
+            max-height: 50%;
+            overflow: hidden;
+        }
+        .tag-pill {
+            background-color: transparent;
+            border: 1px solid rgba(255,255,255,0.7);
+            padding: 1px 4px;
+            border-radius: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60px;
+            color: white;
+            cursor: pointer;
+        }
+        .tag-pill.selected {
+            background-color: var(--primary-color);
+            border-color: var(--primary-dark);
+        }
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 16px;
+            grid-column: 1 / -1;
+        }
+        .tag-container {
+            background: linear-gradient(transparent, rgba(0,0,0,0.3));
+            gap: 0.25rem; /* 使用相对单位 */
+            padding: 0.25rem;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+        .logic-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .control-row label {
+            min-width: 100px;
+            font-size: 12px;
+        }
+        .control-row input[type="range"] {
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+        .control-row .value-display {
+            min-width: 30px;
+            text-align: center;
+        }
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .settings-section {
+            margin-bottom: 15px;
+        }
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+        .settings-section-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+        .panel-width-control {
+            margin-top: 10px;
+        }
+        
+        /* 图片加载状态 */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 10px;
+            margin-top: 5px;
+        }
+        
+        .error-icon {
+            color: #ff6b6b;
+            font-size: 24px;
+        }
+        
+        .loading-placeholder {
+            all: unset; /* 重置所有样式 */
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            background: rgba(255,255,255,0.8);
+            font-size: 2em;
+        }
+        
+        .image-status {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 10px;
+            z-index: 2;
+        }
+        
+        .progress-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+        }
+        
+        /* 新增：图片预览模态框样式 */
+        .preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .preview-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .preview-content {
+            display: flex;
+            max-width: 90%;
+            max-height: 90%;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 90vw;
+            height: 90vh;
+            
+            /* 确保子元素不会溢出 */
+            position: relative;
+        }
+        
+        .preview-image-container {
+            position: relative;
+            width: 70%; /* 固定左侧宽度 */
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: 
+                linear-gradient(45deg, #f5f5f5 25%, transparent 25%, transparent 75%, #f5f5f5 75%),
+                linear-gradient(45deg, #f5f5f5 25%, transparent 25%, transparent 75%, #f5f5f5 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            
+            /* 确保图片不会溢出容器 */
+            position: relative;
+            z-index: 1;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            cursor: grab;
+            transition: transform 0.2s;
+        }
+        
+        .preview-image.dragging {
+            cursor: grabbing;
+        }
+        
+        .preview-info-panel {
+            width: 30%;
+            padding: 20px;
+            background-color: var(--panel-bg);
+            overflow-y: auto;
+        }
+        
+        .info-section {
+            margin-bottom: 20px;
+        }
+        
+        .info-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+            font-size: 16px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            min-width: 100px;
+            color: var(--text-color);
+        }
+        
+        .info-value {
+            flex-grow: 1;
+            color: #555;
+            word-break: break-all;
+        }
+        
+        .preview-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .preview-tag {
+            background-color: var(--primary-light);
+            border: 1px solid var(--primary-color);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .preview-tag:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .preview-tag.selected {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .preview-tag-confidence {
+            font-size: 10px;
+            color: #666;
+            margin-left: 5px;
+        }
+        
+        .preview-actions {
+            margin-top: 20px;
+        }
+        
+        .preview-zoom-controls {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .zoom-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .zoom-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .zoom-value {
+            font-size: 14px;
+        }
+        
+        .search-image-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .search-image-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .close-preview {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .close-preview-icon {
+            color: white;
+            font-size: 20px;
+        }
+        .preview-nav-buttons {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            transform: translateY(-50%);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+            pointer-events: auto;
+        }
+
+        .nav-btn:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .nav-btn:disabled {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+
+        }、
+        /* 新增：懒加载占位符样式 */
+        .lazy-placeholder {
+            background-color: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            /* 响应式高度 */
+            width: 100%;
+            aspect-ratio: 4/3; /* 4:3 比例 */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lazy-placeholder:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* 加载状态样式 */
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s linear infinite;
+            margin-bottom: 5px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 懒加载图片的过渡效果 */
+        .image-card:not(.lazy-placeholder) {
+            animation: fadeIn 0.1s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 左侧预览区域 -->
+        <div class="preview-section">
+            <div id="imageGrid" class="image-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
+                <div class="no-data">没有图片数据，请先加载CSV文件</div>
+            </div>
+        </div>
+        
+        <!-- 右侧控制面板 -->
+        <div class="control-section">
+            <div class="header">
+                <h2>控制面板</h2>
+                <div class="settings-menu">
+                    <button class="settings-btn">⚙️ 设置</button>
+                    <div class="settings-dropdown" id="settingsDropdown">
+                        <div class="settings-section">
+                            <div class="settings-section-title">布局设置</div>
+                            <div class="control-row">
+                                <label>每行图片数:</label>
+                                <input type="range" id="columnsSlider" min="2" max="12" step="1" value="5">
+                                <span id="columnsValue" class="value-display">自动</span>
+                            </div>
+                            <div class="btn-group" style="margin-top: 5px;">
+                                <button id="preset2Btn" class="preset-btn">2列</button>
+                                <button id="preset4Btn" class="preset-btn">4列</button>
+                                <button id="preset6Btn" class="preset-btn">6列</button>
+                                <button id="preset8Btn" class="preset-btn">8列</button>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <div class="settings-section-title">标签显示</div>
+                            <div class="control-row">
+                                <label>最大标签数:</label>
+                                <input type="range" id="maxTagsSlider" min="0" max="10" step="1" value="3">
+                                <span id="maxTagsValue" class="value-display">3</span>
+                            </div>
+                            <div class="control-row">
+                                <label>标签列数:</label>
+                                <input type="range" id="tagColumnsSlider" min="1" max="4" step="1" value="2">
+                                <span id="tagColumnsValue" class="value-display">2</span>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <div class="settings-section-title">颜色主题</div>
+                            <div class="control-row">
+                                <label>主色调:</label>
+                                <input type="range" id="hueSlider" min="0" max="360" value="350">
+                                <div class="color-preview" id="primaryPreview" style="background-color: rgb(255, 179, 191);"></div>
+                            </div>
+                            <div class="control-row">
+                                <label>背景色:</label>
+                                <input type="range" id="bgHueSlider" min="0" max="360" value="350">
+                                <div class="color-preview" id="bgPreview" style="background-color: rgb(255, 240, 242);"></div>
+                            </div>
+                            <button id="resetColorsBtn" style="width: 100%; margin-top: 5px; font-size: 12px;">重置为默认粉色</button>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <div class="settings-section-title">面板设置</div>
+                            <div class="control-row">
+                                <label>面板宽度:</label>
+                                <input type="range" id="panelWidthSlider" min="200" max="600" step="10" value="350">
+                                <span id="panelWidthValue" class="value-display">350px</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-content">
+                <div class="panel-section">
+                    <div class="btn-group">
+                        <button id="loadCsvBtn">📁 加载图片标签CSV</button>
+                        <button id="loadTranslationBtn">🌐 导入对照翻译</button>
+                        <button id="exportBtn">💾 导出筛选结果</button>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <div class="section-title">标签筛选</div>
+                    <div class="search-container">
+                        <input type="text" id="tagSearchInput" class="search-input" placeholder="搜索标签(中/英)...">
+                    </div>
+                    <div class="logic-controls">
+                        <span>筛选逻辑:</span>
+                        <button id="intersectionBtn" class="logic-btn active">交集 (AND)</button>
+                        <button id="unionBtn" class="logic-btn">并集 (OR)</button>
+                        <!-- 添加新按钮 -->
+                        <button id="showSelectedBtn" class="logic-btn">👁️ 只看已选</button>
+                    </div>
+                    <div id="tagSelector" class="tag-selector">
+                        <!-- 标签将通过JS动态加载 -->
+                    </div>
+                    <div class="logic-info">交集模式：图片必须包含所有选中标签 | 并集模式：图片包含任意选中标签即可</div>
+                    <div class="btn-group" style="margin-top: 10px;">
+                        <button id="filterBtn">🔍 应用筛选</button>
+                        <button id="clearBtn">❌ 清除筛选</button>
+                        <button id="selectAllBtn">✅ 全选标签</button>
+                        <button id="deselectAllBtn">❎ 取消全选</button>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <div class="section-title">置信度筛选</div>
+                    <div class="slider-container">
+                        <label for="confidenceSlider">最小置信度:</label>
+                        <input type="range" id="confidenceSlider" min="0" max="1" step="0.01" value="0.5">
+                        <span id="confidenceValue">0.50</span>
+                    </div>
+                </div>
+                
+                <div id="stats" class="stats">就绪 - 请加载图片标签CSV</div>
+                <div id="translationStats" class="translation-info"></div>
+            </div>
+        </div>
+    </div>
+    <div class="settings-dropdown" id="settingsDropdown"></div>
+    <!-- 新增：图片预览模态框 -->
+    <div class="preview-modal" id="previewModal">
+        <div class="close-preview" id="closePreview">
+            <span class="close-preview-icon">×</span>
+        </div>
+        <div class="preview-content">
+            <div class="preview-image-container">
+            <!-- 在这里添加导航按钮 -->
+            <div class="preview-nav-buttons">
+                <button class="nav-btn prev-btn" id="prevImageBtn">‹</button>
+                <button class="nav-btn next-btn" id="nextImageBtn">›</button>
+            </div>
+            <img class="preview-image" id="previewImage" src="" alt="预览图片">
+        </div>
+            <div class="preview-info-panel">
+                <div class="info-section">
+                    <div class="info-title">图片信息</div>
+                    <div class="info-row">
+                        <div class="info-label">名称:</div>
+                        <div class="info-value" id="imageName">-</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">大小:</div>
+                        <div class="info-value" id="imageSize">-</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">分辨率:</div>
+                        <div class="info-value" id="imageResolution">-</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">路径:</div>
+                        <div class="info-value" id="imagePath">-</div>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-title">标签</div>
+                    <div class="preview-tags" id="previewTags">
+                        <!-- 标签将通过JS动态加载 -->
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-title">缩放控制</div>
+                    <div class="preview-zoom-controls">
+                        <button class="zoom-btn" id="zoomOutBtn">-</button>
+                        <button class="zoom-btn" id="zoomInBtn">+</button>
+                        <span class="zoom-value" id="zoomValue">100%</span>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">提示:</div>
+                        <div class="info-value">鼠标悬停时可用滚轮缩放</div>
+                    </div>
+                </div>
+                
+                <div class="preview-actions">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let imageData = [];
+        let allTags = new Map();
+        let filteredImages = [];
+        let filterLogic = 'intersection';
+        let columnsPerRow = '5';
+        let enToZhMap = new Map();
+        let zhToEnMap = new Map();
+        let maxDisplayedTags = 3;
+        let tagColumns = 2;
+        let csvFileDirectory = '';
+        let imageCache = new Map();
+        let loadingQueue = [];
+        let maxConcurrentLoads = 5;
+        let currentLoads = 0;
+        let showSelectedOnly = false; // 是否只显示已选标签
+        
+        // 新增：预览相关变量
+        let currentPreviewImage = null;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let translateX = 0;
+        let translateY = 0;
+        let scale = 1;
+        let currentPreviewIndex = 0; // 当前预览图片的索引
+
+        // 新增懒加载相关全局变量
+        let visibleImageIndices = new Set(); // 当前可见图片索引
+        let observer = null; // IntersectionObserver实例
+        let loadedImageCount = 0; // 已加载图片数量
+        let maxLoadedImages = 50; // 最大同时加载图片数
+        let unloadThreshold = 100; // 卸载不可见图片的阈值
+        
+        // DOM元素
+        const settingsBtn = document.querySelector('.settings-btn');
+        const settingsDropdown = document.getElementById('settingsDropdown');
+        const loadCsvBtn = document.getElementById('loadCsvBtn');
+        const loadTranslationBtn = document.getElementById('loadTranslationBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const tagSearchInput = document.getElementById('tagSearchInput');
+        const tagSelector = document.getElementById('tagSelector');
+        const intersectionBtn = document.getElementById('intersectionBtn');
+        const unionBtn = document.getElementById('unionBtn');
+        const confidenceSlider = document.getElementById('confidenceSlider');
+        const confidenceValue = document.getElementById('confidenceValue');
+        const columnsSlider = document.getElementById('columnsSlider');
+        const columnsValue = document.getElementById('columnsValue');
+        const preset2Btn = document.getElementById('preset2Btn');
+        const preset4Btn = document.getElementById('preset4Btn');
+        const preset6Btn = document.getElementById('preset6Btn');
+        const preset8Btn = document.getElementById('preset8Btn');
+        const maxTagsSlider = document.getElementById('maxTagsSlider');
+        const maxTagsValue = document.getElementById('maxTagsValue');
+        const tagColumnsSlider = document.getElementById('tagColumnsSlider');
+        const tagColumnsValue = document.getElementById('tagColumnsValue');
+        const hueSlider = document.getElementById('hueSlider');
+        const bgHueSlider = document.getElementById('bgHueSlider');
+        const primaryPreview = document.getElementById('primaryPreview');
+        const bgPreview = document.getElementById('bgPreview');
+        const resetColorsBtn = document.getElementById('resetColorsBtn');
+        const panelWidthSlider = document.getElementById('panelWidthSlider');
+        const panelWidthValue = document.getElementById('panelWidthValue');
+        const filterBtn = document.getElementById('filterBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
+        const stats = document.getElementById('stats');
+        const translationStats = document.getElementById('translationStats');
+        const imageGrid = document.getElementById('imageGrid');
+        const showSelectedBtn = document.getElementById('showSelectedBtn');
+        
+        // 新增：预览相关DOM元素
+        const previewModal = document.getElementById('previewModal');
+        const previewImage = document.getElementById('previewImage');
+        const closePreview = document.getElementById('closePreview');
+        const imageName = document.getElementById('imageName');
+        const imageSize = document.getElementById('imageSize');
+        const imageResolution = document.getElementById('imageResolution');
+        const imagePath = document.getElementById('imagePath');
+        const previewTags = document.getElementById('previewTags');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomValue = document.getElementById('zoomValue');
+        const searchImageBtn = document.getElementById('searchImageBtn');
+        
+        // 事件监听器
+        settingsBtn.addEventListener('click', toggleSettings);
+        loadCsvBtn.addEventListener('click', loadCsv);
+        loadTranslationBtn.addEventListener('click', loadTranslationCsv);
+        exportBtn.addEventListener('click', exportFilteredResults);
+        tagSearchInput.addEventListener('input', filterTags);
+        intersectionBtn.addEventListener('click', () => setFilterLogic('intersection'));
+        unionBtn.addEventListener('click', () => setFilterLogic('union'));
+        confidenceSlider.addEventListener('input', updateConfidenceValue);
+        columnsSlider.addEventListener('input', updateColumnsLayout);
+        preset2Btn.addEventListener('click', () => setColumnsPreset(2));
+        preset4Btn.addEventListener('click', () => setColumnsPreset(4));
+        preset6Btn.addEventListener('click', () => setColumnsPreset(6));
+        preset8Btn.addEventListener('click', () => setColumnsPreset(8));
+        maxTagsSlider.addEventListener('input', updateMaxTags);
+        tagColumnsSlider.addEventListener('input', updateTagColumns);
+        hueSlider.addEventListener('input', updateColors);
+        bgHueSlider.addEventListener('input', updateColors);
+        resetColorsBtn.addEventListener('click', resetColors);
+        panelWidthSlider.addEventListener('input', updatePanelWidth);
+        filterBtn.addEventListener('click', filterImages);
+        clearBtn.addEventListener('click', clearFilters);
+        selectAllBtn.addEventListener('click', selectAllTags);
+        deselectAllBtn.addEventListener('click', deselectAllTags);
+        showSelectedBtn.addEventListener('click', toggleSelectedView);
+        
+        // 新增：预览相关事件监听器
+        closePreview.addEventListener('click', closePreviewModal);
+        zoomOutBtn.addEventListener('click', () => adjustZoom(-0.1));
+        zoomInBtn.addEventListener('click', () => adjustZoom(0.1));
+
+        // 新增：预览导航按钮事件监听
+        document.getElementById('prevImageBtn').addEventListener('click', showPrevImage);
+        document.getElementById('nextImageBtn').addEventListener('click', showNextImage);
+
+        // 添加键盘事件监听
+        document.addEventListener('keydown', handleKeyboardNavigation);
+        
+        // 在图片容器上监听，而不是图片本身
+        const previewImageContainer = document.querySelector('.preview-image-container');
+
+        // 图片预览相关事件
+        previewImage.addEventListener('mousedown', startDrag);
+        previewImage.addEventListener('mousemove', dragImage);
+        previewImage.addEventListener('mouseup', endDrag);
+        previewImageContainer.addEventListener('mouseleave', (e) => {
+           // 只有在拖拽中且鼠标离开容器时才结束
+           if (isDragging && !isMouseInContainer(e)) {
+                endDrag();
+            }
+        });
+        previewImageContainer.addEventListener('wheel', handleWheel);
+        // previewImage.addEventListener('wheel', handleWheel);
+        previewImage.addEventListener('mouseenter', () => {
+            previewImage.style.cursor = 'grab';
+        });
+        
+        // 切换设置菜单显示
+        function toggleSettings() {
+            settingsDropdown.classList.toggle('show');
+        }
+        
+        // 点击其他地方关闭设置菜单
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.settings-menu')) {
+                settingsDropdown.classList.remove('show');
+            }
+        });
+
+        // 设置筛选逻辑
+        function setFilterLogic(logic) {
+            filterLogic = logic;
+            intersectionBtn.classList.toggle('active', logic === 'intersection');
+            unionBtn.classList.toggle('active', logic === 'union');
+        }
+
+        // 切换只看已选标签视图
+        function toggleSelectedView() {
+            showSelectedOnly = !showSelectedOnly;
+            
+            if (showSelectedOnly) {
+                showSelectedBtn.classList.add('selected-view');
+                showSelectedBtn.textContent = '👁️ 显示全部';
+            } else {
+                showSelectedBtn.classList.remove('selected-view');
+                showSelectedBtn.textContent = '👁️ 只看已选';
+            }
+            
+            // 更新标签显示
+            filterTags();
+        }
+
+        
+        // 更新置信度显示
+        function updateConfidenceValue() {
+            confidenceValue.textContent = parseFloat(confidenceSlider.value).toFixed(2);
+        }
+        
+        // 更新列布局
+        function updateColumnsLayout() {
+            const sliderValue = parseInt(columnsSlider.value);
+            if (sliderValue === 0) {
+                columnsPerRow = 'auto';
+                columnsValue.textContent = '自动';
+            } else {
+                columnsPerRow = sliderValue;
+                columnsValue.textContent = sliderValue;
+            }
+            applyGridLayout();
+        }
+        
+        // 更新标签列数
+        function updateTagColumns() {
+            tagColumns = parseInt(tagColumnsSlider.value);
+            tagColumnsValue.textContent = tagColumns;
+            
+            // 动态更新CSS变量
+            document.documentElement.style.setProperty('--tag-columns', tagColumns);
+            
+            // 强制重新计算布局
+            tagSelector.style.gridTemplateColumns = `repeat(${tagColumns}, minmax(120px, 1fr))`;
+        }
+                
+        // 设置预设列数
+        function setColumnsPreset(num) {
+            columnsPerRow = num;
+            columnsSlider.value = num;
+            columnsValue.textContent = num;
+            applyGridLayout();
+        }
+        
+        // 应用网格布局
+        function applyGridLayout() {
+            const gridStyle = imageGrid.style;
+            if (columnsPerRow === 'auto') {
+                gridStyle.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
+            } else {
+                gridStyle.gridTemplateColumns = `repeat(${columnsPerRow}, 1fr)`;
+            }
+        }
+        
+        // 更新最大标签数
+        function updateMaxTags() {
+            maxDisplayedTags = parseInt(maxTagsSlider.value);
+            maxTagsValue.textContent = maxDisplayedTags;
+            if (filteredImages.length > 0) {
+                displayImages();
+            }
+        }
+        
+        // 更新颜色
+        function updateColors() {
+            const hue = hueSlider.value;
+            const bgHue = bgHueSlider.value;
+            
+            // 更新预览
+            primaryPreview.style.backgroundColor = `hsl(${hue}, 100%, 85%)`;
+            bgPreview.style.backgroundColor = `hsl(${bgHue}, 100%, 97%)`;
+            
+            // 更新CSS变量
+            document.documentElement.style.setProperty('--primary-color', `hsl(${hue}, 100%, 75%)`);
+            document.documentElement.style.setProperty('--primary-dark', `hsl(${hue}, 100%, 65%)`);
+            document.documentElement.style.setProperty('--primary-light', `hsl(${hue}, 100%, 90%)`);
+            document.documentElement.style.setProperty('--bg-color', `hsl(${bgHue}, 100%, 97%)`);
+            document.documentElement.style.setProperty('--panel-bg', `hsl(${bgHue}, 100%, 95%)`);
+            document.documentElement.style.setProperty('--border-color', `hsl(${hue}, 100%, 85%)`);
+        }
+        
+        // 更新面板宽度
+        function updatePanelWidth() {
+            const width = panelWidthSlider.value;
+            document.documentElement.style.setProperty('--panel-width', `${width}px`);
+            panelWidthValue.textContent = `${width}px`;
+            
+            // 面板宽度变化时重新计算标签列数
+            setTimeout(updateTagColumns, 10);
+        }
+        
+        // 重置颜色
+        function resetColors() {
+            hueSlider.value = 350;
+            bgHueSlider.value = 350;
+            updateColors();
+        }
+        
+        // 加载图片标签CSV
+        function loadCsv() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv,.txt';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const csvData = event.target.result;
+                        // 获取CSV文件所在目录
+                        csvFileDirectory = getFileDirectory(file.name);
+                        parseCsvData(csvData, file.name);
+                    } catch (error) {
+                        alert(`加载CSV文件失败: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+        
+        // 获取文件所在目录
+        function getFileDirectory(filePath) {
+            // 如果是完整路径，提取目录部分
+            if (filePath.includes('/')) {
+                return filePath.substring(0, filePath.lastIndexOf('/') + 1);
+            } else if (filePath.includes('\\')) {
+                return filePath.substring(0, filePath.lastIndexOf('\\') + 1);
+            }
+            // 如果只是文件名，返回空字符串（当前目录）
+            return '';
+        }
+        
+        // 加载对照翻译CSV
+        function loadTranslationCsv() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv,.txt';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const csvData = event.target.result;
+                        parseTranslationCsv(csvData);
+                    } catch (error) {
+                        alert(`加载对照翻译CSV失败: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // 解析对照翻译CSV
+        function parseTranslationCsv(csvString) {
+            enToZhMap.clear();
+            zhToEnMap.clear();
+            const lines = csvString.split('\n');
+            let mapCount = 0;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cols = parseCsvLine(line);
+                if (cols.length < 2) continue;
+                const enTag = cols[0].trim();
+                const zhTag = cols[1].trim();
+                if (!enTag) continue;
+                enToZhMap.set(enTag, zhTag);
+                if (!zhToEnMap.has(zhTag)) zhToEnMap.set(zhTag, new Set());
+                zhToEnMap.get(zhTag).add(enTag);
+                mapCount++;
+            }
+            translationStats.textContent = `已加载 ${mapCount} 条中英文标签映射`;
+            if (imageData.length > 0) {
+                updateTagSelector();
+                displayImages();
+            }
+        }
+        
+        // 解析CSV行
+        function parseCsvLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+        
+        // 解析图片标签CSV数据 - 修改为处理相对路径
+        function parseCsvData(csvString, filename) {
+            imageData = [];
+            allTags.clear();
+            imageCache.clear(); // 清空图片缓存
+            loadingQueue = []; // 清空加载队列
+            currentLoads = 0; // 重置当前加载数
+            
+            const lines = csvString.split('\n');
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const row = parseCsvLine(line);
+                if (row.length < 2) continue;
+                
+                let imagePath = row[0].trim();
+                
+                // 处理相对路径：如果路径不是以http://或https://开头，则认为是相对路径
+                if (!imagePath.startsWith('http://') && !imagePath.startsWith('https://')) {
+                    // 如果是相对路径，结合CSV文件所在目录生成完整路径
+                    if (csvFileDirectory && !imagePath.startsWith('/') && !imagePath.match(/^[a-zA-Z]:/)) {
+                        imagePath = csvFileDirectory + imagePath;
+                    }
+                }
+                
+                const { tags, confidences } = parseTagsAndConfidences(row);
+                if (tags.length === 0) continue;
+                
+                imageData.push({ 
+                    path: imagePath, 
+                    tags, 
+                    confidences, 
+                    rowNumber: i + 1, 
+                    originalData: row 
+                });
+                
+                tags.forEach(tag => {
+                    allTags.set(tag, (allTags.get(tag) || 0) + 1);
+                });
+            }
+            
+            updateTagSelector();
+            filteredImages = [...imageData];
+            displayImages();
+            updateStats();
+            alert(`成功加载 ${imageData.length} 张图片，共 ${allTags.size} 个标签`);
+        }
+        
+        // 解析标签和置信度
+        function parseTagsAndConfidences(row) {
+            let tags = [];
+            let confidences = [];
+            try {
+                // 情况1：有带置信度的标签格式（第4列）
+                if (row.length >= 4 && row[3].includes('(') && row[3].includes(')')) {
+                    const tagConfPairs = row[3].split(', ');
+                    for (const pair of tagConfPairs) {
+                        if (pair.includes('(') && pair.includes(')')) {
+                            const bracketIndex = pair.lastIndexOf('(');
+                            const tag = pair.substring(0, bracketIndex).trim();
+                            const confStr = pair.substring(bracketIndex + 1, pair.indexOf(')'));
+                            const conf = parseFloat(confStr);
+
+                            tags.push(tag);
+                            // 只有当parseFloat返回有效数字时才使用，否则用1.0
+                            confidences.push(isNaN(conf) ? 1.0 : conf);
+                        }
+                    }
+                } 
+                else if (row.length >= 5) {
+                    tags = row[2].includes(',') ? row[2].split(',').map(t => t.trim()) : [row[2].trim()];
+                    const confCol = row[3].trim();
+                    confidences = confCol.includes(',') ? confCol.split(',').map(c => parseFloat(c.trim()) || 0) : [parseFloat(confCol) || 0];
+                    if (tags.length > confidences.length) {
+                        confidences = confidences.concat(Array(tags.length - confidences.length).fill(1.0));
+                    } else if (confidences.length > tags.length) {
+                        confidences = confidences.slice(0, tags.length);
+                    }
+                } else if (row.length >= 3) {
+                    tags = row[2].includes(',') ? row[2].split(',').map(t => t.trim()) : [row[2].trim()];
+                    confidences = Array(tags.length).fill(1.0);
+                }
+            } catch (e) {
+                console.error('解析标签和置信度时出错:', e);
+            }
+            return { tags, confidences };
+        }
+        
+        // 更新标签选择器
+        function updateTagSelector() {
+            tagSelector.innerHTML = '';
+            const sortedEnTags = Array.from(allTags.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+            sortedEnTags.forEach(([enTag, count]) => {
+                const zhTag = enToZhMap.get(enTag) || enTag;
+                const tagItem = document.createElement('div');
+                tagItem.className = 'tag-item';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `tag-${enTag}`;
+                checkbox.value = enTag;
+                const label = document.createElement('label');
+                label.htmlFor = `tag-${enTag}`;
+                label.textContent = zhTag;
+                const countSpan = document.createElement('span');
+                countSpan.className = 'tag-count';
+                countSpan.textContent = `(${count})`;
+                label.appendChild(countSpan);
+                tagItem.appendChild(checkbox);
+                tagItem.appendChild(label);
+                tagSelector.appendChild(tagItem);
+            });
+        }
+        
+        // 筛选标签
+        function filterTags() {
+            const searchTerm = tagSearchInput.value.toLowerCase().trim();
+            const tagItems = tagSelector.querySelectorAll('.tag-item');
+            
+            tagItems.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const label = item.querySelector('label');
+                const shownText = label.textContent.toLowerCase();
+                
+                let match = false;
+                
+                // 基础搜索匹配
+                if (searchTerm === '') {
+                    match = true;
+                } else {
+                    const enTag = checkbox.value.toLowerCase();
+                    if (shownText.includes(searchTerm)) match = true;
+                    else if (enTag.includes(searchTerm)) match = true;
+                }
+                
+                // 关键修改：如果开启了"只看已选"模式，只显示已勾选的标签
+                if (showSelectedOnly && match) {
+                    match = checkbox.checked;
+                }
+                
+                item.style.display = match ? 'flex' : 'none';
+            });
+        }
+        
+        // 全选标签
+        function selectAllTags() {
+            const visibleCheckboxes = tagSelector.querySelectorAll('.tag-item:not([style*="display: none"]) input[type="checkbox"]');
+            visibleCheckboxes.forEach(checkbox => { checkbox.checked = true; });
+            // 如果开启了"只看已选"模式，更新显示
+            if (showSelectedOnly) {
+                filterTags();
+            }
+        }
+        
+        // 取消全选标签
+        function deselectAllTags() {
+            const checkboxes = tagSelector.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => { checkbox.checked = false; });
+            // 如果开启了"只看已选"模式，更新显示
+            if (showSelectedOnly) {
+                filterTags();
+            }
+        }
+        
+        // 筛选图片
+        function filterImages() {
+            const selectedCheckboxes = tagSelector.querySelectorAll('input[type="checkbox"]:checked');
+            const selectedEnTags = Array.from(selectedCheckboxes).map(cb => cb.value);
+            const minConfidence = parseFloat(confidenceSlider.value);
+            
+            filteredImages = imageData.filter(image => {
+                // 标签筛选逻辑
+                if (selectedEnTags.length > 0) {
+                    if (filterLogic === 'intersection') {
+                        // 交集模式：所有选中标签都必须存在且满足置信度要求
+                        if (!selectedEnTags.every(tag => {
+                            const tagIndex = image.tags.indexOf(tag);
+                            return tagIndex !== -1 && image.confidences[tagIndex] >= minConfidence;
+                        })) return false;
+                    } else {
+                        // 并集模式：至少一个选中标签存在且满足置信度要求
+                        if (!selectedEnTags.some(tag => {
+                            const tagIndex = image.tags.indexOf(tag);
+                            return tagIndex !== -1 && image.confidences[tagIndex] >= minConfidence;
+                        })) return false;
+                    }
+                }
+                
+                // 如果没有选中标签，但设置了置信度阈值，检查图片是否有任意标签满足要求
+                if (selectedEnTags.length === 0 && minConfidence > 0) {
+                    if (!image.confidences.some(c => c >= minConfidence)) return false;
+                }
+        
+                return true;
+            });
+    
+            displayImages();
+            updateStats();
+        }
+        
+        // 清除筛选
+        function clearFilters() {
+            tagSearchInput.value = '';
+            deselectAllTags();
+            confidenceSlider.value = 0.5;
+            confidenceValue.textContent = '0.50';
+            // 重置"只看已选"状态
+            if (showSelectedOnly) {
+                showSelectedOnly = false;
+                showSelectedBtn.classList.remove('selected-view');
+                showSelectedBtn.textContent = '👁️ 只看已选';
+            }
+            filterTags();
+            setFilterLogic('intersection');
+            filteredImages = [...imageData];
+            displayImages();
+            updateStats();
+        }
+        
+        // 显示图片网格 - 优化版本，添加并行加载和加载状态显示
+        // 替换原displayImages函数
+        function displayImages() {
+            imageGrid.innerHTML = '';
+            if (filteredImages.length === 0) {
+                imageGrid.innerHTML = '<div class="no-data">没有找到符合条件的图片</div>';
+                return;
+            }
+            
+            // 清空之前的观察和缓存
+            visibleImageIndices.clear();
+            if (observer) {
+                observer.disconnect();
+            }
+            
+            // 创建懒加载占位符
+            createLazyPlaceholders();
+            
+            // 初始化IntersectionObserver
+            initIntersectionObserver();
+            
+            updateStats();
+        }
+
+        setupFallbackPreloadSystem();
+
+        // 新增：创建懒加载占位符
+
+        // 修复后的IntersectionObserver配置
+        // 增强的IntersectionObserver配置
+        // 修改后的懒加载初始化函数
+        // 修复IntersectionObserver配置
+        function initIntersectionObserver() {
+            if (observer) {
+                observer.disconnect();
+            }
+            
+            // 移除trackVisibility选项，因为它不是必须的
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const index = parseInt(entry.target.dataset.index);
+                    const card = entry.target;
+                    
+                    if (entry.isIntersecting) {
+                        visibleImageIndices.add(index);
+                        
+                        // 立即加载进入扩大判定区域的图片
+                        if (card.dataset.loaded === 'false') {
+                            loadSingleImage(index, true); // 高优先级加载
+                        }
+                        
+                        // 智能预加载附近图片
+                        smartPreloadAdjacentImages(index);
+                    } else {
+                        visibleImageIndices.delete(index);
+                    }
+                });
+            }, {
+                rootMargin: '1000px 0px 1000px 0px', // 上下各扩展1000px触发区域
+                threshold: 0.001
+                // 移除了trackVisibility和delay选项
+            });
+
+            // 观察所有占位符
+            document.querySelectorAll('.lazy-placeholder').forEach(placeholder => {
+                observer.observe(placeholder);
+            });
+            
+            // 添加滚动事件监听，进一步优化加载
+            setupScrollOptimization();
+        }
+
+        
+
+        // 新增：智能预加载相邻图片（优化版）
+        function smartPreloadAdjacentImages(currentIndex) {
+            const preloadDistance = Math.min(30, Math.ceil(filteredImages.length * 0.1)); // 动态计算预加载范围
+            const preloadCount = 15; // 增加预加载数量
+            
+            // 计算预加载范围（前后各preloadDistance张）
+            const start = Math.max(0, currentIndex - preloadDistance);
+            const end = Math.min(filteredImages.length - 1, currentIndex + preloadDistance);
+            
+            // 收集需要预加载的索引，按距离排序
+            const indicesToLoad = [];
+            for (let i = start; i <= end; i++) {
+                const card = document.querySelector(`.lazy-placeholder[data-index="${i}"]`);
+                if (card && card.dataset.loaded === 'false') {
+                    const distance = Math.abs(i - currentIndex);
+                    indicesToLoad.push({ index: i, distance: distance });
+                }
+            }
+            
+            // 按距离排序，优先加载近的图片
+            indicesToLoad.sort((a, b) => a.distance - b.distance);
+            
+            // 分批加载，避免一次性加载过多
+            const batchSize = 5;
+            indicesToLoad.slice(0, preloadCount).forEach((item, i) => {
+                setTimeout(() => {
+                    if (loadedImageCount < maxLoadedImages) {
+                        const priority = item.distance <= 10; // 距离10以内的图片高优先级
+                        loadSingleImage(item.index, priority);
+                    }
+                }, i * 50); // 分批延迟加载，避免阻塞
+            });
+        }
+
+        // 新增：滚动优化设置
+        function setupScrollOptimization() {
+            let scrollTimeout = null;
+            let lastScrollY = window.scrollY;
+            let scrollDirection = 0; // 1向下，-1向上
+            
+            window.addEventListener('scroll', () => {
+                const currentScrollY = window.scrollY;
+                scrollDirection = currentScrollY > lastScrollY ? 1 : -1;
+                lastScrollY = currentScrollY;
+                
+                // 防抖处理
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    // 滚动停止后检查可见性
+                    checkExtendedVisibility();
+                    
+                    // 根据滚动方向预加载
+                    preloadInScrollDirection(scrollDirection);
+                }, 100);
+            }, { passive: true });
+        }
+
+        // 新增：扩展可见性检查
+        function checkExtendedVisibility() {
+            const viewportHeight = window.innerHeight;
+            const scrollY = window.scrollY;
+            
+            // 计算扩展的可见区域（上下各扩展2倍视口高度）
+            const extendedTop = scrollY - viewportHeight * 2;
+            const extendedBottom = scrollY + viewportHeight * 3;
+            
+            document.querySelectorAll('.lazy-placeholder').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardTop = rect.top + scrollY;
+                const cardBottom = rect.bottom + scrollY;
+                const index = parseInt(card.dataset.index);
+                
+                // 检查是否在扩展可见区域内
+                const isInExtendedView = (cardBottom > extendedTop && cardTop < extendedBottom);
+                
+                if (isInExtendedView && card.dataset.loaded === 'false') {
+                    if (loadedImageCount < maxLoadedImages) {
+                        // 计算优先级：距离视口越近优先级越高
+                        const viewportMiddle = scrollY + viewportHeight / 2;
+                        const cardMiddle = (cardTop + cardBottom) / 2;
+                        const distanceToViewport = Math.abs(cardMiddle - viewportMiddle);
+                        const priority = distanceToViewport < viewportHeight;
+                        
+                        loadSingleImage(index, priority);
+                    }
+                }
+            });
+        }
+
+        // 新增：根据滚动方向预加载
+        function preloadInScrollDirection(direction) {
+            if (filteredImages.length === 0) return;
+            
+            // 获取当前可见图片的索引范围
+            const visibleIndices = Array.from(visibleImageIndices);
+            if (visibleIndices.length === 0) return;
+            
+            // 根据滚动方向确定预加载范围
+            let targetIndex;
+            if (direction > 0) {
+                // 向下滚动，预加载后面的图片
+                targetIndex = Math.max(...visibleIndices) + 1;
+            } else {
+                // 向上滚动，预加载前面的图片
+                targetIndex = Math.min(...visibleIndices) - 1;
+            }
+            
+            // 确保索引在有效范围内
+            targetIndex = Math.max(0, Math.min(targetIndex, filteredImages.length - 1));
+            
+            // 预加载目标索引附近的图片
+            if (targetIndex >= 0 && targetIndex < filteredImages.length) {
+                smartPreloadAdjacentImages(targetIndex);
+            }
+        }
+
+        // 修改loadSingleImage函数，支持优先级和取消机制
+        function loadSingleImage(index, priority = false) {
+            // 如果已有太多加载任务，取消低优先级任务
+            if (!priority && getPendingRequestCount() > 8) {
+                cancelLowPriorityRequests();
+                return;
+            }
+            
+            const image = filteredImages[index];
+            const card = document.querySelector(`.lazy-placeholder[data-index="${index}"]`);
+            
+            if (!card || card.dataset.loaded === 'true') return;
+            
+            // 检查缓存
+            if (imageCache.has(image.path)) {
+                updateCardWithImage(card, imageCache.get(image.path), index);
+                return;
+            }
+            
+            // 显示加载状态
+            const placeholder = card.querySelector('.image-placeholder');
+            if (placeholder) {
+                if (priority) {
+                    placeholder.innerHTML = '<div class="loading-spinner"></div><div>优先加载中...</div>';
+                } else {
+                    placeholder.innerHTML = '<div class="loading-spinner"></div><div>预加载中...</div>';
+                }
+            }
+            
+            const img = new Image();
+            const requestId = `img_${index}_${Date.now()}`;
+            
+            // 记录请求开始时间
+            pendingRequests.set(requestId, {
+                img: img,
+                index: index,
+                priority: priority,
+                startTime: Date.now(),
+                card: card
+            });
+            
+            img.onload = () => {
+                // 清理请求记录
+                pendingRequests.delete(requestId);
+                
+                // 缓存图片
+                imageCache.set(image.path, img);
+                loadedImageCount++;
+                updateCardWithImage(card, img, index);
+            };
+            
+            img.onerror = () => {
+                // 清理请求记录
+                pendingRequests.delete(requestId);
+                
+                // 显示错误状态
+                if (placeholder) {
+                    placeholder.innerHTML = '<div>❌ 加载失败</div>';
+                }
+                card.dataset.loaded = 'error';
+            };
+            
+            // 根据优先级决定加载时机
+            if (priority) {
+                // 高优先级立即加载
+                img.src = image.path;
+            } else {
+                // 低优先级使用requestIdleCallback
+                requestIdleCallback(() => {
+                    if (pendingRequests.has(requestId)) {
+                        img.src = image.path;
+                    }
+                }, { timeout: 1000 });
+            }
+        }
+
+        // 新增：获取进行中的请求数量
+        function getPendingRequestCount() {
+            return pendingRequests.size;
+        }
+
+        // 修改占位符创建函数，更新提示文字
+        function createLazyPlaceholders() {
+            filteredImages.forEach((image, index) => {
+                const card = document.createElement('div');
+                card.className = 'image-card lazy-placeholder';
+                card.dataset.index = index;
+                card.dataset.loaded = 'false';
+                
+                // 简化的占位符结构
+                const placeholder = document.createElement('div');
+                placeholder.className = 'image-placeholder';
+                placeholder.style.aspectRatio = '1 / 1';
+                placeholder.style.backgroundColor = '#f0f0f0';
+                placeholder.style.display = 'flex';
+                placeholder.style.alignItems = 'center';
+                placeholder.style.justifyContent = 'center';
+                placeholder.innerHTML = '<div>滚动到附近自动加载</div>';
+                
+                card.appendChild(placeholder);
+                imageGrid.appendChild(card);
+
+                // 保留点击事件用于预览已加载图片
+                card.addEventListener('click', () => {
+                    if (card.dataset.loaded === 'true') {
+                        showPreviewModal(filteredImages[index], index);
+                    }
+                });
+            });
+        }
+
+
+        // 新增：智能预加载策略
+        function smartPreloadImages(currentIndex) {
+            const preloadCount = 20; // 每次预加载数量
+            const preloadDistance = 60; // 预加载范围
+            
+            // 计算预加载范围
+            const start = Math.max(0, currentIndex - preloadDistance);
+            const end = Math.min(filteredImages.length - 1, currentIndex + preloadDistance);
+            
+            // 收集需要预加载的索引
+            const indicesToLoad = [];
+            for (let i = start; i <= end; i++) {
+                const card = document.querySelector(`.lazy-placeholder[data-index="${i}"]`);
+                if (card && card.dataset.loaded === 'false') {
+                    indicesToLoad.push(i);
+                }
+            }
+            
+            // 按距离当前索引的远近排序
+            indicesToLoad.sort((a, b) => {
+                return Math.abs(a - currentIndex) - Math.abs(b - currentIndex);
+            });
+            
+            // 加载最近的几张图片
+            indicesToLoad.slice(0, preloadCount).forEach(index => {
+                if (loadedImageCount < maxLoadedImages) {
+                    loadSingleImage(index);
+                }
+            });
+        }
+
+
+        // 增强的预加载函数
+        function preloadAdjacentImages(currentIndex, range = 3) {
+            const start = Math.max(0, currentIndex - range);
+            const end = Math.min(filteredImages.length - 1, currentIndex + range);
+            
+            // 按距离排序，先加载最近的
+            const indicesToLoad = [];
+            for (let i = start; i <= end; i++) {
+                if (i !== currentIndex) {
+                    indicesToLoad.push(i);
+                }
+            }
+            
+            // 按与当前图片的距离排序
+            indicesToLoad.sort((a, b) => {
+                return Math.abs(a - currentIndex) - Math.abs(b - currentIndex);
+            });
+
+
+            // 加载排序后的图片
+            for (const index of indicesToLoad) {
+                const card = document.querySelector(`.lazy-placeholder[data-index="${index}"]`);
+                if (card && card.dataset.loaded === 'false' && loadedImageCount < maxLoadedImages) {
+                    loadSingleImage(index);
+                }
+            }
+        }
+
+
+        // 确保在滚动时也能触发加载
+        function setupScrollListener() {
+            let lastScrollPosition = window.scrollY;
+            
+            window.addEventListener('scroll', () => {
+                const currentScrollPosition = window.scrollY;
+                // 只有滚动超过一定距离才检查
+                if (Math.abs(currentScrollPosition - lastScrollPosition) > 50) {
+                    checkVisibleImages();
+                    lastScrollPosition = currentScrollPosition;
+                }
+            });
+        }
+
+
+
+
+        // 初始化时调用
+        function initLazyLoad() {
+            createLazyPlaceholders();
+            initIntersectionObserver();
+            setupScrollListener();
+            
+            // 初始加载首屏图片
+            setTimeout(() => {
+                checkVisibleImages();
+            }, 300);
+        }
+        
+        // 处理图片加载队列
+        function processLoadingQueue(progressInfo, loadedCount) {
+            // 如果队列为空，移除进度信息
+            if (loadingQueue.length === 0) {
+                if (progressInfo.parentNode) {
+                    progressInfo.parentNode.removeChild(progressInfo);
+                }
+                return;
+            }
+            
+            // 启动新的加载任务，直到达到最大并发数
+            while (currentLoads < maxConcurrentLoads && loadingQueue.length > 0) {
+                const item = loadingQueue.shift();
+                loadImage(item, progressInfo, loadedCount);
+                currentLoads++;
+            }
+        }
+        
+        // 新增：加载可见区域的图片
+        function loadVisibleImages() {
+            const indicesToLoad = Array.from(visibleImageIndices)
+                .filter(index => {
+                    const card = document.querySelector(`.lazy-placeholder[data-index="${index}"]`);
+                    return card && card.dataset.loaded === 'false';
+                })
+                .slice(0, 20); // 每次最多加载20张
+            
+            indicesToLoad.forEach(index => {
+                if (loadedImageCount < maxLoadedImages) {
+                    loadSingleImage(index, true);
+                }
+            });
+        }
+
+        function increaseRootMargin() {
+            console.group('📏 增大预加载范围');
+            
+            if (observer) {
+                observer.disconnect();
+            }
+            
+            // 使用更大的预加载范围
+            observer = new IntersectionObserver((entries) => {
+                console.log(`🎯 触发 ${entries.length} 个元素`);
+                
+                entries.forEach(entry => {
+                    const index = parseInt(entry.target.dataset.index);
+                    
+                    if (entry.isIntersecting) {
+                        visibleImageIndices.add(index);
+                        
+                        if (entry.target.dataset.loaded === 'false') {
+                            const distance = Math.round(entry.boundingClientRect.top - window.innerHeight);
+                            console.log(`🚀 预加载图片 ${index} (距离: ${distance}px)`);
+                            loadSingleImage(index, true);
+                        }
+                    }
+                });
+            }, {
+                rootMargin: '2000px 0px 2000px 0px', // 增大到2000px
+                threshold: 0.001
+            });
+            
+            const placeholders = document.querySelectorAll('.lazy-placeholder');
+            placeholders.forEach(p => observer.observe(p));
+            
+            console.log(`✅ 预加载范围增大到2000px，观察 ${placeholders.length} 个元素`);
+            
+            // 测试效果
+            setTimeout(() => {
+                const el100 = document.querySelector('.lazy-placeholder[data-index="100"]');
+                if (el100) {
+                    const rect = el100.getBoundingClientRect();
+                    console.log(`元素100现在距离: ${rect.top - window.innerHeight}px`);
+                    console.log(`应在2000px内: ${rect.top <= window.innerHeight + 2000}`);
+                }
+            }, 100);
+            
+            console.groupEnd();
+        }
+
+        function checkPreloadedCache() {
+            console.group('💾 检查预加载缓存');
+            
+            // 假设有 imageCache
+            if (window.imageCache) {
+                console.log(`缓存中有 ${imageCache.size} 张图片`);
+                
+                // 列出缓存的图片
+                imageCache.forEach((img, path) => {
+                    console.log(`已缓存: ${path}, 尺寸: ${img.width}x${img.height}`);
+                });
+            }
+            
+            // 检查特定图片是否已缓存
+            const testIndices = [45, 100, 150];
+            testIndices.forEach(index => {
+                const el = document.querySelector(`.lazy-placeholder[data-index="${index}"]`);
+                if (el) {
+                    const img = new Image();
+                    img.onload = () => {
+                        console.log(`图片 ${index} 已从缓存加载 (浏览器缓存)`);
+                    };
+                    img.onerror = () => {
+                        console.log(`图片 ${index} 未缓存`);
+                    };
+                    // 需要知道图片路径，这里假设有 filteredImages
+                    if (window.filteredImages && filteredImages[index]) {
+                        img.src = filteredImages[index].path;
+                    }
+                }
+            });
+            
+            console.groupEnd();
+        }
+
+        function verifyPreloadRange() {
+            console.group('🧪 验证预加载范围');
+            
+            // 测试几个关键位置的元素
+            const testElements = [
+                { index: 45, expectTrigger: true, note: '应该触发 (距离~71px)' },
+                { index: 100, expectTrigger: false, note: '原不触发 (距离1034px)，现在应该触发' },
+                { index: 150, expectTrigger: false, note: '距离视口约1500px' },
+                { index: 200, expectTrigger: false, note: '距离视口约2785px' }
+            ];
+            
+            testElements.forEach(test => {
+                const el = document.querySelector(`.lazy-placeholder[data-index="${test.index}"]`);
+                if (!el) {
+                    console.log(`❌ 元素 ${test.index} 不存在`);
+                    return;
+                }
+                
+                const rect = el.getBoundingClientRect();
+                const distance = rect.top - window.innerHeight;
+                
+                console.log(`\n元素 ${test.index}:`);
+                console.log(`  距离视口底部: ${Math.round(distance)}px`);
+                console.log(`  注释: ${test.note}`);
+                
+                // 检查是否在 visibleImageIndices 中
+                const isInSet = visibleImageIndices.has(test.index);
+                console.log(`  在 visibleImageIndices 中: ${isInSet}`);
+                
+                // 检查是否已加载
+                console.log(`  已加载: ${el.dataset.loaded === 'true'}`);
+            });
+            
+            // 总结
+            console.log('\n📊 总结:');
+            console.log(`当前可见图片数量: ${visibleImageIndices.size}`);
+            console.log('如果元素100不在集合中，需要进一步增大rootMargin');
+            
+            console.groupEnd();
+        }
+
+        function deepDiagnoseRealImages() {
+            console.group('🔍 深度诊断真实图片元素');
+            
+            // 检查几个关键的真实图片元素
+            const testIndices = [0, 45, 100, 200];
+            
+            testIndices.forEach(index => {
+                const el = document.querySelector(`.lazy-placeholder[data-index="${index}"]`);
+                if (!el) {
+                    console.log(`❌ 元素 ${index} 不存在`);
+                    return;
+                }
+                
+                console.log(`\n📦 元素 ${index} 详细分析:`);
+                
+                // 1. 基本几何信息
+                const rect = el.getBoundingClientRect();
+                console.log('  几何信息:');
+                console.log('  - 位置:', {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left});
+                console.log('  - 尺寸:', {width: rect.width, height: rect.height});
+                console.log('  - 距离视口底部:', rect.top - window.innerHeight, 'px');
+                
+                // 2. 样式信息
+                const style = getComputedStyle(el);
+                console.log('  关键样式:');
+                console.log('  - display:', style.display);
+                console.log('  - visibility:', style.visibility);
+                console.log('  - opacity:', style.opacity);
+                console.log('  - position:', style.position);
+                console.log('  - transform:', style.transform);
+                console.log('  - will-change:', style.willChange);
+                
+                // 3. 检查是否实际可见
+                const isVisible = (
+                    style.display !== 'none' &&
+                    style.visibility !== 'hidden' &&
+                    parseFloat(style.opacity) > 0 &&
+                    rect.width > 0 &&
+                    rect.height > 0
+                );
+                console.log('  可见性判断:', isVisible ? '✅ 可见' : '❌ 不可见');
+                
+                // 4. 检查父容器链
+                console.log('  父容器检查:');
+                let parent = el.parentElement;
+                let depth = 0;
+                const parentIssues = [];
+                
+                while (parent && depth < 5) {
+                    const parentStyle = getComputedStyle(parent);
+                    const parentRect = parent.getBoundingClientRect();
+                    
+                    // 检查问题
+                    if (parentStyle.display === 'none') {
+                        parentIssues.push(`层级${depth}: ${parent.tagName} display: none`);
+                    }
+                    if (parentStyle.visibility === 'hidden') {
+                        parentIssues.push(`层级${depth}: ${parent.tagName} visibility: hidden`);
+                    }
+                    if (parentStyle.overflow === 'hidden' && parentRect.height < rect.height) {
+                        parentIssues.push(`层级${depth}: ${parent.tagName} overflow: hidden 可能裁剪`);
+                    }
+                    if (parentStyle.opacity === '0') {
+                        parentIssues.push(`层级${depth}: ${parent.tagName} opacity: 0`);
+                    }
+                    
+                    depth++;
+                    parent = parent.parentElement;
+                }
+                
+                if (parentIssues.length > 0) {
+                    console.log('  ⚠️ 父容器问题:', parentIssues);
+                } else {
+                    console.log('  ✅ 父容器正常');
+                }
+                
+                // 5. 手动创建测试 Intersection Observer
+                console.log('  手动测试 Intersection Observer:');
+                const testObs = new IntersectionObserver((entries) => {
+                    console.log(`  元素 ${index} 测试触发:`, {
+                        isIntersecting: entries[0].isIntersecting,
+                        intersectionRatio: entries[0].intersectionRatio,
+                        boundingRect: {
+                            top: entries[0].boundingClientRect.top,
+                            height: entries[0].boundingClientRect.height
+                        }
+                    });
+                }, { 
+                    rootMargin: '1000px 0px', 
+                    threshold: 0.001 
+                });
+                
+                testObs.observe(el);
+                
+                // 立即检查
+                setTimeout(() => {
+                    const records = testObs.takeRecords();
+                    if (records.length > 0) {
+                        console.log(`  立即检测结果: isIntersecting=${records[0].isIntersecting}`);
+                    } else {
+                        console.log(`  立即检测: 无记录`);
+                    }
+                    testObs.disconnect();
+                }, 50);
+            });
+            
+            console.groupEnd();
+        }
+
+        function setupFallbackPreloadSystem() {
+            console.group('🔄 设置备用预加载系统');
+            
+            // 1. 停止现有 Observer
+            if (observer) {
+                observer.disconnect();
+                observer = null;
+            }
+            
+            // 2. 清空集合
+            visibleImageIndices.clear();
+            
+            // 3. 设置滚动监听
+            let lastScrollTime = 0;
+            let scrollTimer = null;
+            
+                function checkAndPreload() {
+                    const now = Date.now();
+                    if (now - lastScrollTime < 200) return;
+                    lastScrollTime = now;
+                    
+                    const placeholders = document.querySelectorAll('.lazy-placeholder');
+                    const viewportHeight = window.innerHeight;
+                    const preloadDistance = 2000; // 增大预加载距离，比如2000px
+                    
+                    console.log(`🔍 检查 ${placeholders.length} 个元素`);
+                    
+                    placeholders.forEach(placeholder => {
+                        const rect = placeholder.getBoundingClientRect();
+                        const index = parseInt(placeholder.dataset.index);
+                        const distance = rect.top; // 距离视口顶部的距离
+                        
+                        // ✅ 修改1：移除"在视口内"的条件判断
+                        // 只要在预加载区域内，就立即加载
+                        if (distance <= viewportHeight + preloadDistance && distance >= -preloadDistance) {
+                            if (!visibleImageIndices.has(index)) {
+                                visibleImageIndices.add(index);
+                            }
+                            
+                            // ✅ 修改2：不再检查是否在视口内，所有在预加载区的都高优先级加载
+                            if (placeholder.dataset.loaded === 'false') {
+                                // ✅ 修改3：全部使用高优先级加载
+                                loadSingleImage(index, true); // 总是true
+                            }
+                        } else if (distance > viewportHeight + preloadDistance + 1000) {
+                            visibleImageIndices.delete(index);
+                        }
+                    });
+                    
+                    console.log(`📊 当前在预加载区: ${visibleImageIndices.size} 个元素`);
+                }
+            
+            
+            // 4. 设置监听
+            window.addEventListener('scroll', () => {
+                if (scrollTimer) clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(checkAndPreload, 50);
+            });
+            
+            // 5. 立即检查一次
+            setTimeout(checkAndPreload, 1000);
+            
+            // 6. 定期检查
+            setInterval(checkAndPreload, 10000);
+            
+            console.log('✅ 备用预加载系统已启动');
+            console.groupEnd();
+            
+            return '备用系统运行中';
+        }
+
+        function ultimatePreloadTest() {
+            console.group('🚀 终极预加载测试');
+            
+            // 1. 手动添加一个测试元素
+            const testDiv = document.createElement('div');
+            testDiv.className = 'lazy-placeholder';
+            testDiv.dataset.index = 'test-9999';
+            testDiv.dataset.loaded = 'false';
+            testDiv.style.cssText = `
+                position: absolute;
+                top: ${window.innerHeight + 500}px;
+                left: 50px;
+                width: 100px;
+                height: 100px;
+                background: red;
+                border: 3px solid blue;
+                z-index: 9999;
+            `;
+            document.body.appendChild(testDiv);
+            
+            console.log('✅ 测试元素已添加到距离视口500px处');
+            
+            // 2. 用各种方法测试
+            console.log('\n🔬 方法1: Intersection Observer');
+            const testIO = new IntersectionObserver((entries) => {
+                console.log('IO 触发:', entries[0].isIntersecting, 'ratio:', entries[0].intersectionRatio);
+            }, { rootMargin: '1000px 0px', threshold: 0.001 });
+            testIO.observe(testDiv);
+            
+            console.log('\n🔬 方法2: 手动计算');
+            const rect = testDiv.getBoundingClientRect();
+            console.log('距离视口底部:', rect.top - window.innerHeight, 'px');
+            console.log('应在1000px内:', rect.top <= window.innerHeight + 1000);
+            
+            console.log('\n🔬 方法3: 强制触发');
+            // 轻微滚动触发检测
+            const originalScroll = window.scrollY;
+            window.scrollTo(0, originalScroll + 1);
+            setTimeout(() => window.scrollTo(0, originalScroll), 100);
+            
+            // 清理
+            setTimeout(() => {
+                testIO.disconnect();
+                document.body.removeChild(testDiv);
+                console.log('\n🧹 测试完成，已清理');
+            }, 2000);
+            
+            console.groupEnd();
+        }
+
+
+        function diagnoseLayoutIssues() {
+            console.group('🔍 诊断布局问题');
+            
+            // 检查几个关键元素
+            const testIndices = [0, 45, 100, 200];
+            
+            testIndices.forEach(index => {
+                const el = document.querySelector(`.lazy-placeholder[data-index="${index}"]`);
+                if (!el) {
+                    console.log(`❌ 元素 ${index} 不存在`);
+                    return;
+                }
+                
+                const rect = el.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const scrollY = window.scrollY;
+                const absoluteTop = rect.top + scrollY;
+                
+                console.log(`\n元素 ${index}:`);
+                console.log('  - 相对视口顶部:', rect.top, 'px');
+                console.log('  - 绝对位置顶部:', absoluteTop, 'px');
+                console.log('  - 视口底部位置:', viewportHeight + scrollY, 'px');
+                console.log('  - 距离视口底部:', rect.top - viewportHeight, 'px');
+                console.log('  - 应在1000px内:', rect.top <= viewportHeight + 1000);
+                
+                // 检查样式
+                const style = getComputedStyle(el);
+                console.log('  - position:', style.position);
+                console.log('  - display:', style.display);
+                console.log('  - transform:', style.transform);
+                
+                // 检查是否有fixed定位的祖先
+                let parent = el.parentElement;
+                let depth = 0;
+                while (parent && depth < 3) {
+                    if (getComputedStyle(parent).position === 'fixed') {
+                        console.warn(`  ⚠️ 祖先元素 (${parent.tagName}) 是 fixed 定位，可能影响检测`);
+                    }
+                    parent = parent.parentElement;
+                    depth++;
+                }
+            });
+            
+            // 检查文档总高度
+            console.log('\n📏 文档尺寸:');
+            console.log('  - 文档高度:', document.documentElement.scrollHeight, 'px');
+            console.log('  - 视口高度:', window.innerHeight, 'px');
+            console.log('  - 滚动位置:', window.scrollY, 'px');
+            
+            console.groupEnd();
+        }
+
+        // 新增：加载单张图片
+        // 新增全局变量
+        const pendingRequests = new Map(); // 存储进行中的请求
+        const retryCounts = new Map(); // 存储重试次数
+        const MAX_RETRIES = 3; // 最大重试次数
+
+
+        // 新增：取消低优先级请求
+        function cancelLowPriorityRequests() {
+            const now = Date.now();
+            const toCancel = [];
+            
+            // 找出待取消的请求
+            pendingRequests.forEach((req, id) => {
+                if (!req.priority && now - req.timestamp > 1000) {
+                    toCancel.push(id);
+                }
+            });
+            
+            // 执行取消
+            toCancel.forEach(id => {
+                const req = pendingRequests.get(id);
+                if (req) {
+                    req.img.onload = null;
+                    req.img.onerror = null;
+                    req.img.src = '';
+                    pendingRequests.delete(id);
+                    
+                    // 恢复占位符状态
+                    const card = document.querySelector(`.lazy-placeholder[data-index="${req.index}"]`);
+                    if (card && card.dataset.loaded === 'false') {
+                        const placeholder = card.querySelector('.image-placeholder');
+                        placeholder.innerHTML = '<div>滑动到此处自动加载</div>';
+                    }
+                }
+            });
+        }
+
+        // 新增：智能卸载图片
+        function smartUnloadImages() {
+            const viewportHeight = window.innerHeight;
+            const scrollPosition = window.scrollY;
+            
+            document.querySelectorAll('.image-card:not(.lazy-placeholder)').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const index = parseInt(card.dataset.index);
+                
+                // 计算元素是否远离视口
+                const isFarFromViewport = (
+                    rect.bottom < -viewportHeight * 2 || 
+                    rect.top > viewportHeight * 3
+                );
+                
+                if (isFarFromViewport && loadedImageCount > maxLoadedImages * 0.7) {
+                    // 转换为占位符
+                    card.innerHTML = '';
+                    card.className = 'image-card lazy-placeholder';
+                    card.dataset.loaded = 'false';
+                    
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'image-placeholder';
+                    placeholder.innerHTML = '<div>图片已卸载，滑动到此处重新加载</div>';
+                    card.appendChild(placeholder);
+                    
+                    loadedImageCount--;
+                    
+                    // 重新观察
+                    if (observer) {
+                        observer.observe(card);
+                    }
+                }
+            });
+        }
+
+
+        // 新增：更新卡片显示真实图片
+        function updateCardWithImage(card, img, index) {
+            const image = filteredImages[index];
+            card.innerHTML = '';
+            card.className = 'image-card';
+            card.dataset.loaded = 'true';
+            
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'image-container';
+            imgContainer.appendChild(img.cloneNode());
+            
+            // 创建标签显示（与原代码相同）
+            const imageTags = document.createElement('div');
+            imageTags.className = 'image-tags';
+            
+            const selectedCheckboxes = tagSelector.querySelectorAll('input[type="checkbox"]:checked');
+            const selectedEnTags = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            const tagConfPairs = image.tags.map((tag, index) => ({
+                tag,
+                confidence: image.confidences[index]
+            }));
+            
+            tagConfPairs.sort((a, b) => {
+                const aSelected = selectedEnTags.includes(a.tag);
+                const bSelected = selectedEnTags.includes(b.tag);
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+                return b.confidence - a.confidence;
+            });
+            
+            tagConfPairs.slice(0, maxDisplayedTags).forEach(({tag}) => {
+                const zhTag = enToZhMap.get(tag) || tag;
+                const tagPill = document.createElement('span');
+                tagPill.className = 'tag-pill';
+                tagPill.textContent = zhTag;
+                tagPill.title = `${tag} → ${zhTag}`;
+                imageTags.appendChild(tagPill);
+            });
+            
+            if (image.tags.length > maxDisplayedTags && maxDisplayedTags !== 0) {
+                const moreTag = document.createElement('span');
+                moreTag.className = 'tag-pill';
+                moreTag.textContent = `+${image.tags.length - maxDisplayedTags}`;
+                imageTags.appendChild(moreTag);
+            }
+            
+            card.appendChild(imgContainer);
+            card.appendChild(imageTags);
+            
+            // 重新添加点击事件
+            card.addEventListener('click', () => {
+                showPreviewModal(image, index);
+            });
+            
+            // 重新观察更新后的元素
+            if (observer) {
+                observer.observe(card);
+            }
+        }
+
+        // 加载单个图片
+        function loadImage(item, progressInfo, loadedCount) {
+            const { imagePath, card, imgContainer, loadingOverlay } = item;
+            
+            // 检查缓存
+            if (imageCache.has(imagePath)) {
+                const cachedImg = imageCache.get(imagePath);
+                updateImageCard(card, imgContainer, loadingOverlay, cachedImg);
+                currentLoads--;
+                loadedCount++;
+                progressInfo.textContent = `加载中: ${loadedCount}/${filteredImages.length}`;
+                processLoadingQueue(progressInfo, loadedCount);
+                return;
+            }
+            
+            const img = new Image();
+            img.onload = () => {
+                // 缓存图片
+                imageCache.set(imagePath, img);
+                updateImageCard(card, imgContainer, loadingOverlay, img);
+                currentLoads--;
+                loadedCount++;
+                progressInfo.textContent = `加载中: ${loadedCount}/${filteredImages.length}`;
+                processLoadingQueue(progressInfo, loadedCount);
+            };
+            
+            img.onerror = () => {
+                // 图片加载失败
+                const errorStatus = document.createElement('div');
+                errorStatus.className = 'image-status';
+                const errorIcon = document.createElement('div');
+                errorIcon.className = 'error-icon';
+                errorIcon.textContent = '❌';
+                const errorText = document.createElement('div');
+                errorText.textContent = '加载失败';
+                errorStatus.appendChild(errorIcon);
+                errorStatus.appendChild(errorText);
+                imgContainer.appendChild(errorStatus);
+                
+                loadingOverlay.style.display = 'none';
+                currentLoads--;
+                loadedCount++;
+                progressInfo.textContent = `加载中: ${loadedCount}/${filteredImages.length}`;
+                processLoadingQueue(progressInfo, loadedCount);
+            };
+            
+            // 开始加载图片
+            img.src = imagePath;
+        }
+        
+        // 更新图片卡片显示
+        function updateImageCard(card, imgContainer, loadingOverlay, img) {
+            // 移除占位符和加载状态
+            const placeholder = imgContainer.querySelector('.loading-placeholder');
+            if (placeholder) {
+                imgContainer.removeChild(placeholder);
+            }
+            
+            loadingOverlay.style.display = 'none';
+            
+            // 添加图片到容器
+            imgContainer.appendChild(img);
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            stats.textContent = `总图片: ${imageData.length} | 筛选: ${filteredImages.length} | 标签数: ${allTags.size}`;
+        }
+        
+        // 导出筛选结果
+        function exportFilteredResults() {
+            if (filteredImages.length === 0) {
+                alert('没有筛选结果可导出');
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,文件路径,文件名,标签(英文),标签(中文),置信度列表,最高置信度\n";
+            filteredImages.forEach(image => {
+                const maxConf = Math.max(...image.confidences);
+                const enTags = image.tags.join(',');
+                const zhTags = image.tags.map(t => enToZhMap.get(t) || t).join(',');
+                const row = [
+                    image.path,
+                    image.path.split('/').pop() || image.path,
+                    enTags,
+                    zhTags,
+                    image.confidences.map(c => c.toFixed(2)).join(','),
+                    maxConf.toFixed(2)
+                ].map(field => `"${field.replace(/"/g, '""')}"`).join(',');
+                csvContent += row + "\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "filtered_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // 新增：显示预览模态框
+        function showPreviewModal(image, index) {
+            currentPreviewImage = image;
+            currentPreviewIndex = index; // 保存当前索引
+            
+            // 更新切换按钮状态
+            updateNavButtons();
+            
+            currentPreviewImage = image;
+            
+            // 重置缩放和位置
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+            previewImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            zoomValue.textContent = `${Math.round(scale * 100)}%`;
+            
+            // 设置图片
+            const cachedImg = imageCache.get(image.path);
+            if (cachedImg) {
+                previewImage.src = cachedImg.src;
+                
+                // 更新图片信息
+                imageName.textContent = image.path.split('/').pop() || image.path;
+                imagePath.textContent = image.path;
+                
+                // 获取图片大小和分辨率
+                getImageInfo(cachedImg, image);
+            } else {
+                // 如果图片不在缓存中，尝试加载
+                const img = new Image();
+                img.onload = () => {
+                    previewImage.src = img.src;
+                    imageName.textContent = image.path.split('/').pop() || image.path;
+                    imagePath.textContent = image.path;
+                    getImageInfo(img, image);
+                };
+                img.onerror = () => {
+                    previewImage.src = '';
+                    imageName.textContent = '加载失败';
+                    imagePath.textContent = image.path;
+                    imageSize.textContent = '-';
+                    imageResolution.textContent = '-';
+                };
+                img.src = image.path;
+            }
+            
+            // 更新标签
+            updatePreviewTags(image);
+            
+            // 显示模态框
+            previewModal.classList.add('active');
+        }
+
+        // 切换到上一张图片
+        function showPrevImage() {
+            if (currentPreviewIndex > 0) {
+                const prevIndex = currentPreviewIndex - 1;
+                const prevImage = filteredImages[prevIndex];
+                showPreviewModal(prevImage, prevIndex);
+            }
+        }
+
+        // 切换到下一张图片
+        function showNextImage() {
+            if (currentPreviewIndex < filteredImages.length - 1) {
+                const nextIndex = currentPreviewIndex + 1;
+                const nextImage = filteredImages[nextIndex];
+                showPreviewModal(nextImage, nextIndex);
+            }
+        }
+
+        // 更新导航按钮状态
+        function updateNavButtons() {
+            const prevBtn = document.getElementById('prevImageBtn');
+            const nextBtn = document.getElementById('nextImageBtn');
+            
+            if (prevBtn && nextBtn) {
+                prevBtn.disabled = currentPreviewIndex === 0;
+                nextBtn.disabled = currentPreviewIndex === filteredImages.length - 1;
+            }
+        }
+
+        // 添加键盘事件监听
+        function handleKeyboardNavigation(e) {
+            if (!previewModal.classList.contains('active')) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    showPrevImage();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    showNextImage();
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    closePreviewModal();
+                    break;
+            }
+        }
+        
+        // 新增：获取图片信息
+        function getImageInfo(img, image) {
+            // 获取图片大小
+            fetch(img.src)
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob();
+                    }
+                    throw new Error('无法获取图片大小');
+                })
+                .then(blob => {
+                    const sizeInKB = blob.size / 1024;
+                    imageSize.textContent = sizeInKB < 1024 ? 
+                        `${sizeInKB.toFixed(1)} KB` : 
+                        `${(sizeInKB / 1024).toFixed(1)} MB`;
+                })
+                .catch(() => {
+                    imageSize.textContent = '-';
+                });
+            
+            // 获取图片分辨率
+            imageResolution.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+        }
+        
+        // 新增：更新预览标签
+        function updatePreviewTags(image) {
+            previewTags.innerHTML = '';
+            
+            // 创建标签和置信度的配对数组
+            const tagConfPairs = image.tags.map((tag, index) => ({
+                tag,
+                confidence: image.confidences[index]
+            }));
+            
+            // 按置信度降序排序
+            tagConfPairs.sort((a, b) => b.confidence - a.confidence);
+            
+            // 显示所有标签
+            tagConfPairs.forEach(({tag, confidence}) => {
+                const zhTag = enToZhMap.get(tag) || tag;
+                const tagElement = document.createElement('div');
+                tagElement.className = 'preview-tag';
+                tagElement.textContent = zhTag;
+                tagElement.title = `${tag} (置信度: ${confidence.toFixed(2)})`;
+                tagElement.dataset.tag = tag;
+                
+                const confidenceSpan = document.createElement('span');
+                confidenceSpan.className = 'preview-tag-confidence';
+                confidenceSpan.textContent = confidence.toFixed(2);
+                tagElement.appendChild(confidenceSpan);
+                
+                // 检查标签是否已选中
+                const checkbox = tagSelector.querySelector(`input[value="${tag}"]`);
+                if (checkbox && checkbox.checked) {
+                    tagElement.classList.add('selected');
+                }
+                
+                // 添加点击事件
+                tagElement.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleTagSelection(tag);
+                    tagElement.classList.toggle('selected');
+                });
+                
+                previewTags.appendChild(tagElement);
+            });
+        }
+        
+        // 新增：切换标签选择状态
+        function toggleTagSelection(tag) {
+            const checkbox = tagSelector.querySelector(`input[value="${tag}"]`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        }
+        
+        // 新增：关闭预览模态框
+        function closePreviewModal() {
+            previewModal.classList.remove('active');
+            currentPreviewImage = null;
+        }
+        
+        // 新增：开始拖动图片
+        function startDrag(e) {
+            if (scale <= 0) return;
+            
+            e.preventDefault(); // 关键：阻止默认拖拽行为
+            e.stopPropagation(); // 阻止事件冒泡
+
+            isDragging = true;
+            startX = e.clientX;  // 只记录鼠标位置
+            startY = e.clientY;
+            initialTranslateX = translateX;  // 记录图片当前位置
+            initialTranslateY = translateY;
+            previewImage.classList.add('dragging');
+            previewImage.style.cursor = 'grabbing';
+
+            // 将事件监听移到document级别
+            document.addEventListener('mousemove', dragImage);
+            document.addEventListener('mouseup', endDrag);
+        }
+        
+        // 新增：拖动图片
+        function dragImage(e) {
+            if (!isDragging) return;
+            
+            e.preventDefault(); // 阻止默认行为
+            e.stopPropagation();
+
+            // 关键修复：基于初始状态的相对移动
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
+            translateX = initialTranslateX + (e.clientX - startX);
+            translateY = initialTranslateY + (e.clientY - startY);
+            previewImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+        
+        // 新增：结束拖动
+        function endDrag() {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            previewImage.classList.remove('dragging');
+            previewImage.style.cursor = 'grab';
+
+            // 清理document级别的事件监听
+            document.removeEventListener('mousemove', dragImage);
+            document.removeEventListener('mouseup', endDrag);
+        }
+        
+        // 新增：处理滚轮缩放
+        function handleWheel(e) {
+            e.preventDefault();
+            
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            adjustZoom(delta);
+        }
+        
+        // 新增：调整缩放
+        function adjustZoom(delta) {
+            const newScale = Math.max(0.1, Math.min(scale + delta, 10));
+            if (newScale !== scale) {
+                scale = newScale;
+                previewImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                zoomValue.textContent = `${Math.round(scale * 100)}%`;
+            }
+        }
+        
+        // 初始化布局与滑条
+        applyGridLayout();
+        updateMaxTags();
+        updateTagColumns();
+        updateColors(); // 初始化颜色
+        updatePanelWidth(); // 初始化面板宽度
+        
+        // 新增：点击模态框外部关闭
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                closePreviewModal();
+            }
+        });
+    </script>
+</body>
+</html>
