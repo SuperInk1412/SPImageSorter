@@ -16,10 +16,15 @@ SPImageSorter 是一个基于 DeepDanbooru 的动漫图片分类处理浏览工�
 2. **配置命令行环境**
    - 打开命令提示符（cmd）
    - 逐行粘贴以下命令：
+
 pip install tensorflow==2.15.0
+
 pip install tensorflow-io==0.31.0
+
 pip install deepdanbooru
+
 pip install pandas
+
 pip install chardet
 
 3. **等待安装完成**
