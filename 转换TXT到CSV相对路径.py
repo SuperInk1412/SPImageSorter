@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.11
 import re
 import pandas as pd
 import os
@@ -5,6 +6,24 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog
 import glob
+import chardet  # 新增：用于检测文件编码
+
+
+def detect_file_encoding(file_path):
+    """
+    自动检测文件编码，解决UnicodeDecodeError问题
+    """
+    try:
+        with open(file_path, 'rb') as f:
+            raw_data = f.read()
+            result = chardet.detect(raw_data)
+            encoding = result['encoding']
+            confidence = result['confidence']
+            print(f"📝 自动检测文件编码: {encoding} (可信度: {confidence:.2f})")
+            return encoding
+    except Exception as e:
+        print(f"⚠️  编码检测失败，使用默认编码 GBK: {e}")
+        return 'gbk'
 
 
 def convert_deepdanbooru_txt_to_csv(txt_file_path, csv_file_path=None, relative_to=None):
@@ -25,8 +44,27 @@ def convert_deepdanbooru_txt_to_csv(txt_file_path, csv_file_path=None, relative_
     else:
         relative_to = Path(relative_to)
     
-    with open(txt_file_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+    # ========== 核心修改：自动检测编码并读取文件 ==========
+    # 检测文件编码
+    file_encoding = detect_file_encoding(txt_file_path)
+    # 尝试使用检测到的编码读取，失败则依次尝试常用编码
+    encodings_to_try = [file_encoding, 'gbk', 'gb2312', 'utf-8', 'gb18030']
+    lines = None
+    
+    for enc in encodings_to_try:
+        try:
+            with open(txt_file_path, 'r', encoding=enc, errors='ignore') as f:
+                lines = f.readlines()
+            print(f"✅ 使用编码 {enc} 成功读取文件")
+            break
+        except Exception as e:
+            print(f"⚠️  使用编码 {enc} 读取失败: {e}")
+            continue
+    
+    if lines is None:
+        print("❌❌❌❌ 所有编码尝试均失败，无法读取文件")
+        return None
+    # ========== 编码读取部分修改结束 ==========
     
     results = []
     current_image = None
@@ -81,10 +119,10 @@ def convert_deepdanbooru_txt_to_csv(txt_file_path, csv_file_path=None, relative_
     
     # 保存最后一个图片的数据
     if current_image is not None and current_tags:
-        # 转换为相对路径
+        # 转换为相对路径（修复原代码的变量名错误：relative_base → relative_to）
         abs_image_path = Path(current_image)
         try:
-            relative_image_path = abs_image_path.relative_to(relative_base)
+            relative_image_path = abs_image_path.relative_to(relative_to)
         except ValueError:
             # 如果路径不在基准目录下，使用绝对路径
             relative_image_path = abs_image_path
@@ -162,11 +200,22 @@ if __name__ == "__main__":
     print("DeepDanbooru TXT转CSV工具 (自动选择最新文件版)")
     print("=" * 60)
 
-    # ===== 检查pandas是否安装 =====
-    if not check_pandas_installed():
-        print("❌❌❌❌ 错误: pandas模块未安装")
-        print("请运行以下命令安装pandas:")
-        print("pip install pandas")
+    # ===== 检查依赖 =====
+    required_packages = {'pandas': check_pandas_installed()}
+    try:
+        import chardet
+        required_packages['chardet'] = True
+    except ImportError:
+        required_packages['chardet'] = False
+
+    # 检查缺失的依赖
+    missing_packages = [pkg for pkg, installed in required_packages.items() if not installed]
+    if missing_packages:
+        print("❌❌❌❌ 错误: 缺少必要的模块")
+        for pkg in missing_packages:
+            print(f"   - {pkg} 未安装")
+        print("\n请运行以下命令安装:")
+        print(f"pip install {' '.join(missing_packages)}")
         input("\n按Enter键退出...")
         exit(1)
 
